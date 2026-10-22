@@ -3,6 +3,9 @@
 import { seal, open } from './seal.js';
 import { roundAt, roundTime, waitForBeacon } from './drand.js';
 import { $, clock, countdown, fmtInt, sha256Hex, short } from './util.js';
+import { isoCube } from './isocube.js';
+
+const SLOTS = 6;
 
 const TICKERS = ['$OPAQUE', '$KORA', '$VELT', '$NODE', '$HALO', '$RIFT', '$MOTE', '$LUMA'];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -20,6 +23,34 @@ export function initBatch() {
   const countEl = $('#batchCount');
   const etaEl = $('#batchEta');
   const readEl = $('#batchRead');
+  const queueEl = $('#queue');
+  const slots = [];
+  for (let i = 0; i < SLOTS; i++) {
+    const el = document.createElement('div');
+    el.className = 'slot';
+    el.innerHTML = `<div class="slot-cube"></div><span class="slot-pos">#${String(i + 1).padStart(2, '0')}</span><span class="slot-lbl">empty</span>`;
+    queueEl.append(el);
+    slots.push(el);
+  }
+  const resetSlots = () => slots.forEach((el) => {
+    el.className = 'slot';
+    el.querySelector('.slot-cube').innerHTML = '';
+    el.querySelector('.slot-lbl').textContent = 'empty';
+  });
+  const fillSlot = (i, hash) => {
+    const el = slots[i];
+    if (!el) return;
+    el.className = 'slot is-sealed';
+    el.querySelector('.slot-cube').innerHTML = isoCube({ size: 15 });
+    el.querySelector('.slot-lbl').textContent = short(hash, 4, 4);
+  };
+  const openSlot = (i, text) => {
+    const el = slots[i];
+    if (!el) return;
+    el.className = 'slot is-open';
+    el.querySelector('.slot-cube').innerHTML = isoCube({ size: 15, open: true });
+    el.querySelector('.slot-lbl').textContent = text;
+  };
 
   let visible = false;
   let running = false;
@@ -73,6 +104,7 @@ export function initBatch() {
       idEl.textContent = fmtInt(target / 5);
       rows = [];
       rowsEl.textContent = '';
+      resetSlots();
       phase = 'sealing';
       header();
 
@@ -88,6 +120,7 @@ export function initBatch() {
         rows.push(r);
         r.el = rowEl(r);
         rowsEl.append(r.el);
+        fillSlot(r.pos - 1, r.hash);
         header();
       }
 
@@ -96,10 +129,13 @@ export function initBatch() {
         await waitForBeacon(target);
       } catch { continue; }
 
+      queueEl.classList.add('flash');
+      setTimeout(() => queueEl.classList.remove('flash'), 900);
       for (const r of rows) {
         try {
           const res = await open(r.armored);
           r.text = res.text;
+          openSlot(r.pos - 1, res.text);
           r.el.classList.remove('is-new');
           r.el.classList.add('is-open');
           r.el.querySelector('.pay').textContent = res.text;
@@ -108,7 +144,7 @@ export function initBatch() {
           r.el.querySelector('.state').textContent = 'error';
         }
         header();
-        await sleep(160);
+        await sleep(70);
       }
       phase = 'open';
       await sleep(6500);

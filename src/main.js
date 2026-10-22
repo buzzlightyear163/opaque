@@ -1,4 +1,6 @@
 import './style.css';
+
+document.documentElement.classList.add('has-js');
 import { CONFIG, PREVIEW } from './config.js';
 import { startNetwork, onBeacon, onStatus, onTick, roundAt, roundTime, PERIOD_MS, waitForBeacon, net } from './drand.js';
 import { seal, open, inspect } from './seal.js';
@@ -48,7 +50,6 @@ function renderBeacon() {
 const chip = $('#liveChip');
 const liveLabel = $('#liveLabel');
 const liveRound = $('#liveRound');
-const footRound = $('#footRound');
 const beat = $('#beat');
 const bBar = $('#bBar');
 const bNext = $('#bNext');
@@ -59,9 +60,12 @@ onStatus((s) => {
   renderBeacon();
 });
 
+const clockN = $('#clockN');
+const clockBar = $('#clockBar');
 function showRound(r) {
   liveRound.textContent = `#${fmtInt(r)}`;
-  footRound.textContent = fmtInt(r);
+  const str = fmtInt(r);
+  clockN.innerHTML = `${str.slice(0, -3)}<b>${str.slice(-3)}</b>`;
 }
 showRound(roundAt());
 onTick(showRound);
@@ -71,12 +75,28 @@ onTick(showRound);
   const p = (now - roundTime(roundAt(now))) / PERIOD_MS;
   beat.style.transform = `scaleX(${p.toFixed(4)})`;
   bBar.style.transform = `scaleX(${p.toFixed(4)})`;
+  clockBar.style.transform = `scaleX(${p.toFixed(4)})`;
   bNext.textContent = `next round in ${((1 - p) * 3).toFixed(1)}s`;
   requestAnimationFrame(beatLoop);
 })();
 
 onBeacon(renderBeacon);
 if (PREVIEW) onTick(renderBeacon);
+
+// ---------- hero cipher field ----------
+(function fillHeroTex() {
+  const el = $('#heroTex');
+  if (!el) return;
+  const bytes = new Uint8Array(48 * 60);
+  crypto.getRandomValues(bytes);
+  const lines = [];
+  for (let i = 0; i < 60; i++) {
+    let bin = '';
+    for (let j = 0; j < 48 * 2; j++) bin += String.fromCharCode(bytes[(i * 48 + j) % bytes.length]);
+    lines.push(btoa(bin));
+  }
+  el.textContent = lines.join('\n');
+})();
 
 // ---------- hero word ----------
 const fw = $('#futureWord');
@@ -153,10 +173,22 @@ block.init().then((ok) => {
   const target = roundAt() + 1200; // about an hour out
   try {
     const armored = await seal(json, target);
-    $('#threatCipher').textContent = armored.trim();
     const info = inspect(armored);
+    const body = armored.replace(/-----[A-Z ]+-----/g, '').replace(/\s+/g, '');
+    $('#swCipher').textContent = body.slice(160, 208);
+    $('#swRound').textContent = `opens round ${fmtInt(info.round)}`;
     $('#threatNote').textContent = `The same order, sealed just now to round ${fmtInt(info.round)}, about an hour from now. Nothing in it can be read or priced until then.`;
   } catch { /* leave placeholder */ }
+})();
+
+// ---------- reveal on scroll ----------
+(function reveals() {
+  const els = $$('.sec-head, .term, .sandwich, .facts, .batch, .verify, .status, .token-main, .token-art, .beacon-row, .foot-top');
+  if (reduceMotion() || !('IntersectionObserver' in window)) { els.forEach((el) => el.classList.add('in')); return; }
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  }, { rootMargin: '0px 0px -12% 0px' });
+  els.forEach((el) => { el.classList.add('rv'); io.observe(el); });
 })();
 
 // ---------- the rest ----------

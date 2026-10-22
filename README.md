@@ -48,6 +48,7 @@ Any seal opens with drand's own CLI: `tle -d order.age`
 | `src/console.js` | the seal console |
 | `src/cube3d.js` | three.js sealed block (hero and protocol scene): ciphertext faces, red seam with bloom, opens to the plaintext |
 | `src/scene.js` | pinned /protocol scroll scene: Lock → Wait → Open |
+| `src/isocube.js` | small SVG cube for the batch queue |
 | `src/batch.js` | demo batch, really sealed and opened |
 | `src/sniper.js` | the simulated adversary log |
 | `src/card.js` | 16:9 share card (PNG) |

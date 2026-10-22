@@ -142,6 +142,44 @@ export class SealedCube {
     scene.add(group);
     this.group = group;
 
+    // light pooling on the floor under the seam: red while sealed, white once open
+    const pool = document.createElement('canvas');
+    pool.width = pool.height = 256;
+    const pg = pool.getContext('2d');
+    const rg = pg.createRadialGradient(128, 128, 0, 128, 128, 128);
+    rg.addColorStop(0, 'rgba(255,255,255,1)');
+    rg.addColorStop(0.35, 'rgba(255,255,255,0.35)');
+    rg.addColorStop(1, 'rgba(255,255,255,0)');
+    pg.fillStyle = rg;
+    pg.fillRect(0, 0, 256, 256);
+    const poolTex = new THREE.CanvasTexture(pool);
+    const floorMat = (w, h) => new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ map: poolTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, color: 0x000000 }),
+    );
+    this.floorRed = floorMat(3.2, 3.2);
+    this.floorWhite = floorMat(4.2, 4.2);
+    for (const f of [this.floorRed, this.floorWhite]) {
+      f.rotation.x = -Math.PI / 2;
+      f.position.set(0, -1.001, 0.55);
+      f.renderOrder = 2;
+      group.add(f);
+    }
+    // a soft contact shadow so the block sits on something
+    const sh = document.createElement('canvas');
+    sh.width = sh.height = 256;
+    const sg = sh.getContext('2d');
+    const sr = sg.createRadialGradient(128, 128, 20, 128, 128, 128);
+    sr.addColorStop(0, 'rgba(0,0,0,0.85)');
+    sr.addColorStop(1, 'rgba(0,0,0,0)');
+    sg.fillStyle = sr;
+    sg.fillRect(0, 0, 256, 256);
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sh), transparent: true, depthWrite: false }));
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = -1.003;
+    shadow.renderOrder = 1;
+    group.add(shadow);
+
     const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 });
     const composer = new EffectComposer(renderer, rt);
     composer.addPass(new RenderPass(scene, cam));
@@ -187,7 +225,7 @@ export class SealedCube {
     const fit = Math.max(1, 0.95 / Math.min(1, w / h));
     const d = 13.2 * fit / this.opts.zoom;
     this.cam.position.set(d * 0.62, d * 0.5, d * 0.62);
-    this.cam.lookAt(0, 0, 0);
+    this.cam.lookAt(0, -0.12, 0);
     this.cam.updateProjectionMatrix();
   }
 
@@ -261,6 +299,8 @@ export class SealedCube {
     const glow = s.seam * (1 + s.flash * 1.8);
     this.seamMat.color.copy(SEAM_RED).multiplyScalar(Math.max(0.001, glow * 2.6));
     this.seam.visible = s.seam > 0.04;
+    this.floorRed.material.color.setRGB(0.55 * s.seam * (1 + s.flash), 0.12 * s.seam * (1 + s.flash), 0.08 * s.seam * (1 + s.flash));
+    this.floorWhite.material.color.setScalar(0.22 * s.inner);
     for (const m of this.innerMats) m.emissiveIntensity = s.inner * 1.3;
     this.coreLight.intensity = s.inner * 1.6;
 

@@ -48,6 +48,7 @@
 <main id="top">
   <!-- HERO -->
   <section class="hero">
+    <div class="hero-tex" id="heroTex" aria-hidden="true"></div>
     <div class="wrap hero-in">
       <div class="hero-copy">
         <p class="eyebrow"><span class="tag">sealed order flow</span><span>solana · pump.fun</span></p>
@@ -164,26 +165,28 @@
         <p class="sec-lede">There is no public waiting room on Solana, but an order still passes through RPC nodes, relays and the validator building the block before it lands. Anyone on that path who can read it can trade ahead of it.</p>
       </header>
 
-      <div class="compare">
-        <figure class="pane">
-          <figcaption><span>your_order.json</span><span class="pill pill-red">readable</span></figcaption>
-          <pre class="json"><code>{
-  <span class="jk">"side"</span>: <span class="js">"BUY"</span>,
-  <span class="jk">"amount"</span>: <span class="js">"2.5 SOL"</span>,
-  <span class="jk">"mint"</span>: <span class="js">"$OPAQUE"</span>,
-  <span class="jk">"slippage"</span>: <span class="js hot">"15%"</span>,
-  <span class="jk">"signer"</span>: <span class="js">"7xKX…f3Qe"</span>
-}</code></pre>
-          <p class="pane-note">The slippage field tells a bot exactly how far it can push the price before you buy.</p>
+      <div class="sandwich rv" id="sandwich">
+        <figure class="sw sw-bad">
+          <figcaption><span>Without OPAQUE</span><span class="pill pill-red">readable</span></figcaption>
+          <div class="sw-block">
+            <span class="sw-bracket" aria-hidden="true"><i>sandwich</i></span>
+            <div class="sw-tx sw-bot" style="--d:2"><span class="sw-pos">#1</span><span class="sw-who">bot</span><span class="sw-what">BUY 8 SOL</span><span class="sw-tag">front-run</span></div>
+            <div class="sw-tx sw-you" style="--d:0"><span class="sw-pos">#2</span><span class="sw-who">you</span><span class="sw-what">BUY 2.5 SOL <em>slippage 15%</em></span><span class="sw-tag">filled worse</span></div>
+            <div class="sw-tx sw-bot" style="--d:3"><span class="sw-pos">#3</span><span class="sw-who">bot</span><span class="sw-what">SELL 8 SOL</span><span class="sw-tag">back-run</span></div>
+          </div>
+          <p class="sw-note">The bot reads your size and slippage, buys in front of you and sells into your fill.</p>
         </figure>
-        <figure class="pane">
-          <figcaption><span>what_they_read.age</span><span class="pill">sealed</span></figcaption>
-          <pre class="cipher cipher-pane" id="threatCipher">-----BEGIN AGE ENCRYPTED FILE-----
-sealing in your browser…
------END AGE ENCRYPTED FILE-----</pre>
-          <p class="pane-note" id="threatNote">The same order, sealed to a future round. Nothing in it can be read or priced.</p>
+        <figure class="sw sw-good">
+          <figcaption><span>With OPAQUE</span><span class="pill">sealed</span></figcaption>
+          <div class="sw-block">
+            <div class="sw-tx sw-ghost" style="--d:2"><span class="sw-pos">#1</span><span class="sw-who">bot</span><span class="sw-what">no quote</span><span class="sw-tag">payload unreadable</span></div>
+            <div class="sw-tx sw-sealed" style="--d:0"><span class="sw-pos">#2</span><span class="sw-who"><svg class="mini" viewBox="0 0 20 22" aria-hidden="true"><polygon points="10,1.6 18.2,6.3 10,11 1.8,6.3" fill="#f4f5f7"/><polygon points="1.8,6.3 10,11 10,20.4 1.8,15.7" fill="#959ba4"/><polygon points="10,11 18.2,6.3 18.2,15.7 10,20.4" fill="#40454d"/><polyline points="14.1,3.95 5.9,8.65 5.9,18.05" fill="none" stroke="#ff4530" stroke-width="1.4" stroke-linejoin="round"/></svg></span><span class="sw-what"><b id="swCipher">YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHRsb2Nr</b><em id="swRound">opens at its round</em></span><span class="sw-tag">sealed</span></div>
+            <div class="sw-tx sw-ghost" style="--d:3"><span class="sw-pos">#3</span><span class="sw-who">bot</span><span class="sw-what">nothing to sell into</span><span class="sw-tag">no edge</span></div>
+          </div>
+          <p class="sw-note" id="threatNote">The same order, sealed to a round about an hour from now. Nothing in it can be read or priced until then.</p>
         </figure>
       </div>
+      <p class="sw-legend">Illustration of a sandwich. The sealed row shows the real ciphertext of an order sealed in your browser just now.</p>
 
       <ul class="facts">
         <li><b>~6.9M</b><span>sandwich attacks by bots against about 2.2M Solana wallets, Oct 2025 to Oct 2026</span><cite>Bitquery data, via Forklog</cite></li>
@@ -275,6 +278,7 @@ sealing in your browser…
           <span><span class="k">opens in</span><b id="batchEta">—</b></span>
           <span><span class="k">readable</span><b id="batchRead">0 / 0</b></span>
         </div>
+        <div class="queue" id="queue" aria-label="Batch queue"></div>
         <div class="batch-table" role="table" aria-label="Demo batch of sealed orders">
           <div class="brow brow-h" role="row">
             <span role="columnheader">pos</span>
@@ -357,21 +361,31 @@ sealing in your browser…
           <a class="btn btn-line" id="tokX" href="https://x.com" target="_blank" rel="noopener">Follow on X <span aria-hidden="true">↗</span></a>
         </div>
       </div>
+      <div class="token-art">
+        <img src="./src/assets/cube.webp" width="768" height="875" alt="The OPAQUE block: a cube of ciphertext split by a glowing red seam." loading="lazy" decoding="async">
       <dl class="token-facts">
         <div><dt>chain</dt><dd>Solana</dd></div>
         <div><dt>launch</dt><dd>pump.fun</dd></div>
         <div><dt>supply</dt><dd>1,000,000,000</dd></div>
         <div><dt>ticker</dt><dd>$OPAQUE</dd></div>
       </dl>
+      </div>
     </div>
   </section>
 </main>
 
 <footer class="foot">
   <div class="wrap">
-    <p class="foot-big">Opens on the second.</p>
+    <div class="foot-top">
+      <p class="foot-big">Opens on the second.</p>
+      <div class="clock" aria-label="Current drand round">
+        <span class="k">drand quicknet · round</span>
+        <div class="clock-n" id="clockN">—</div>
+        <div class="clock-bar" aria-hidden="true"><i id="clockBar"></i></div>
+      </div>
+    </div>
     <div class="foot-row">
-      <span class="foot-round"><span class="k">round</span><b id="footRound">—</b></span>
+      <span class="foot-copy">OPAQUE · orders encrypted to the future</span>
       <nav class="foot-nav" aria-label="Footer">
         <a href="#seal">seal</a><a href="#protocol">protocol</a><a href="#verify">verify</a><a id="footX" href="https://x.com" target="_blank" rel="noopener">x ↗</a>
       </nav>
