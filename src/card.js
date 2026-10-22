@@ -23,70 +23,77 @@ function font(ctx, weight, size, family = 'mono', condensed = true) {
   try { ctx.fontStretch = condensed && family === 'mono' ? 'condensed' : 'normal'; } catch { /* noop */ }
 }
 
-// An isometric block drawn from base64 glyphs, split down the seam.
-function drawBlock(ctx, cx, cy, size, { open = false, plain = '' } = {}) {
-  const cw = 15, ch = 24;
-  const s = size / 2;
-  const iso = (x, y, z) => [cx + (x - z) * 0.866 * s, cy + (x + z) * 0.5 * s - y * s];
-  const gap = open ? 0.34 : 0.03;
-  const halves = [-1, 1];
-  font(ctx, 500, 19, 'mono', true);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const seeded = (i, j) => {
-    const v = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
-    return v - Math.floor(v);
-  };
+const hash = (a, b, k) => { const v = Math.sin(a * 127.1 + b * 311.7 + k * 74.7) * 43758.5453; return v - Math.floor(v); };
+
+// The sealed block, same as the brand graphics: a solid isometric cube split
+// down x = 0, ciphertext laid in each face's plane, light leaking from the seam.
+function drawCube(ctx, cx, cy, S, { open = false, plain = '' } = {}) {
+  const gap = open ? 0.22 : 0.04;
+  const P = (x, y, z) => [cx + (x - z) * 0.866 * S, cy + (x + z) * 0.5 * S - y * S];
+  const plates = { top: '#f4f5f7', left: '#959ba4', right: '#40454d', inner: open ? '#0c0d0f' : '#ff4530' };
+  const inks = { top: '#b3b8bf', left: '#737982', right: '#2e3238', inner: open ? '#ffffff' : '#c9301c' };
+  const weights = { top: 700, left: 600, right: 500, inner: 700 };
   const faces = [];
-  for (const side of halves) {
-    const ox = side * gap;
-    // each half spans x in [0,1] or [-1,0] in local units, shifted by ox
-    const x0 = side < 0 ? -1 + ox : 0 + ox;
-    const x1 = side < 0 ? 0 + ox : 1 + ox;
-    faces.push({ lum: 0.92, pts: [iso(x0, 1, -1), iso(x1, 1, -1), iso(x1, 1, 1), iso(x0, 1, 1)] });   // top
-    faces.push({ lum: 0.5, pts: [iso(x0, 1, 1), iso(x1, 1, 1), iso(x1, -1, 1), iso(x0, -1, 1)] });    // front (z=1)
-    faces.push({ lum: 0.26, pts: [iso(x1, 1, 1), iso(x1, 1, -1), iso(x1, -1, -1), iso(x1, -1, 1)] }); // right side
-  }
-  const inside = (px, py, pts) => {
-    let c = false;
-    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
-      const [xi, yi] = pts[i], [xj, yj] = pts[j];
-      if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) c = !c;
-    }
-    return c;
-  };
-  const core = open ? { x: cx, y: cy, r: s * 0.42 } : null;
-  const plainChars = plain.replace(/\s+/g, '');
-  const x0 = cx - size * 1.25, x1 = cx + size * 1.25, y0 = cy - size * 1.1, y1 = cy + size * 1.1;
-  for (let y = y0, j = 0; y < y1; y += ch, j++) {
-    for (let x = x0, i = 0; x < x1; x += cw, i++) {
-      const px = x + cw / 2, py = y + ch / 2;
-      let lum = -1;
-      for (const f of faces) if (inside(px, py, f.pts)) lum = Math.max(lum, f.lum);
-      const r = seeded(i, j);
-      if (core && Math.hypot(px - core.x, py - core.y) < core.r && plainChars) {
-        ctx.fillStyle = C.text;
-        ctx.globalAlpha = 1;
-        ctx.fillText(plainChars[(i + j * 5) % plainChars.length], px, py);
-        continue;
+  [[-1 - gap, -gap], [gap, 1 + gap]].forEach(([x0, x1], h) => {
+    faces.push({ kind: h === 0 ? 'inner' : 'right', h, poly: [P(x1, 1, 1), P(x1, 1, -1), P(x1, -1, -1), P(x1, -1, 1)], m: [0.866, -0.5, 0, 1, ...P(x1, 1, 1)], len: [2 * S, 2 * S] });
+    faces.push({ kind: 'left', h, poly: [P(x0, 1, 1), P(x1, 1, 1), P(x1, -1, 1), P(x0, -1, 1)], m: [0.866, 0.5, 0, 1, ...P(x0, 1, 1)], len: [(x1 - x0) * S, 2 * S] });
+    faces.push({ kind: 'top', h, poly: [P(x0, 1, -1), P(x1, 1, -1), P(x1, 1, 1), P(x0, 1, 1)], m: [0.866, 0.5, -0.866, 0.5, ...P(x0, 1, -1)], len: [(x1 - x0) * S, 2 * S] });
+  });
+  const path = (poly) => { ctx.beginPath(); poly.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); };
+  const cw = S * 0.075, ch = cw * 1.6;
+  const text = plain.replace(/\s+/g, '');
+  for (const f of faces) {
+    ctx.save();
+    path(f.poly);
+    ctx.fillStyle = plates[f.kind];
+    ctx.fill();
+    ctx.clip();
+    ctx.transform(...f.m);
+    ctx.fillStyle = inks[f.kind];
+    font(ctx, weights[f.kind], ch * 0.74, 'mono', true);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const isPlain = f.kind === 'inner' && open && text;
+    const seed = { top: 1, left: 2, right: 3, inner: 4 }[f.kind] + f.h * 10;
+    for (let j = 0; j < f.len[1] / ch + 1; j++) {
+      for (let i = 0; i < f.len[0] / cw + 1; i++) {
+        const t = isPlain ? text[(i + j * 3) % text.length] : B64[(hash(i, j, seed) * 64) | 0];
+        ctx.fillText(t, i * cw + cw / 2, j * ch + ch / 2);
       }
-      if (lum < 0) {
-        if (r > 0.82) {
-          ctx.globalAlpha = 0.07;
-          ctx.fillStyle = C.mute;
-          ctx.fillText(B64[(r * 997) % 64 | 0], px, py);
-        }
-        continue;
-      }
-      const l = Math.min(1, Math.max(0, lum + (r - 0.5) * 0.22));
-      ctx.globalAlpha = 0.25 + l * 0.75;
-      ctx.fillStyle = l > 0.6 ? C.text : C.mute;
-      const ramp = 'ilj1tfr7Iczvx3sJLT2nuoeaYZy5FkhSE4P6w9dbqpXVK0gUGOCAHDNRmBQM8W';
-      const idx = Math.min(ramp.length - 1, Math.floor(l * (ramp.length - 1) + (r - 0.5) * 6));
-      ctx.fillText(ramp[Math.max(0, idx)], px, py);
     }
+    ctx.restore();
   }
-  ctx.globalAlpha = 1;
+  // light from the seam: red while sealed, white once open
+  const seam = [P(0, 1, -1), P(0, 1, 1), P(0, -1, 1)];
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const glow = open
+    ? [[2, 'rgba(255,255,255,0.5)', 3], [18, 'rgba(255,255,255,0.2)', 22]]
+    : [[3, 'rgba(255,90,60,0.9)', 4], [16, 'rgba(255,69,48,0.55)', 14], [44, 'rgba(255,69,48,0.3)', 34]];
+  for (const [blur, color, w] of glow) {
+    ctx.filter = `blur(${blur}px)`;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(...seam[0]);
+    ctx.lineTo(...seam[1]);
+    ctx.lineTo(...seam[2]);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// Brand mark: the same cube in miniature.
+function drawMark(ctx, x, y, s) {
+  const pts = (arr) => { ctx.beginPath(); arr.forEach(([a, b], k) => (k ? ctx.lineTo(x + a * s, y + b * s) : ctx.moveTo(x + a * s, y + b * s))); ctx.closePath(); };
+  pts([[10, 1.6], [18.2, 6.3], [10, 11], [1.8, 6.3]]); ctx.fillStyle = '#f4f5f7'; ctx.fill();
+  pts([[1.8, 6.3], [10, 11], [10, 20.4], [1.8, 15.7]]); ctx.fillStyle = '#959ba4'; ctx.fill();
+  pts([[10, 11], [18.2, 6.3], [18.2, 15.7], [10, 20.4]]); ctx.fillStyle = '#40454d'; ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + 14.1 * s, y + 3.95 * s); ctx.lineTo(x + 5.9 * s, y + 8.65 * s); ctx.lineTo(x + 5.9 * s, y + 18.05 * s);
+  ctx.strokeStyle = '#ff4530'; ctx.lineWidth = 1.4 * s; ctx.lineJoin = 'round'; ctx.stroke();
 }
 
 export async function renderCard(job) {
@@ -111,13 +118,17 @@ export async function renderCard(job) {
   ctx.lineWidth = 2;
   ctx.strokeRect(M / 2, M / 2, W - M, H - M);
 
-  drawBlock(ctx, 1170, 450, 250, { open, plain: job.openedText || '' });
+  ctx.save();
+  const sp = ctx.createRadialGradient(1180, 470, 0, 1180, 470, 520);
+  sp.addColorStop(0, '#1f2227'); sp.addColorStop(1, 'rgba(5,5,6,0)');
+  ctx.fillStyle = sp; ctx.fillRect(560, 0, 1040, 900);
+  ctx.restore();
+  drawCube(ctx, 1180, 470, 150, { open, plain: job.openedText || '' });
 
   // wordmark
-  ctx.fillStyle = C.text;
   const mx = M, my = M + 4;
-  ctx.fillRect(mx, my, 13, 30);
-  ctx.fillRect(mx + 17, my, 13, 30);
+  drawMark(ctx, mx, my - 2, 1.6);
+  ctx.fillStyle = C.text;
   font(ctx, 600, 26, 'mono', false);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';

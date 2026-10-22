@@ -2,10 +2,11 @@ import './style.css';
 import { CONFIG, PREVIEW } from './config.js';
 import { startNetwork, onBeacon, onStatus, onTick, roundAt, roundTime, PERIOD_MS, waitForBeacon, net } from './drand.js';
 import { seal, open, inspect } from './seal.js';
-import { CipherBlock } from './cipherblock.js';
+import { SealedCube } from './cube3d.js';
 import { initConsole } from './console.js';
 import { initBatch } from './batch.js';
 import { initCardModal } from './card.js';
+import { initScene } from './scene.js';
 import { $, $$, fmtInt, countdown, scramble, copyText, reduceMotion } from './util.js';
 
 // ---------- config + static wiring ----------
@@ -85,7 +86,7 @@ if (!reduceMotion()) {
 }
 
 // ---------- hero block + ambient seal loop ----------
-const block = new CipherBlock($('#block'), { colors: { text: '#e9ebee', dim: '#3f444c', red: '#ff4530' } });
+const block = new SealedCube($('#block'), { zoom: 1 });
 const hudObj = $('#hudObj');
 const hudRound = $('#hudRound');
 const hudState = $('#hudState');
@@ -129,7 +130,7 @@ async function heroLoop() {
       await waitForBeacon(target);
       const res = await open(armored);
       done = true;
-      block.open(res.text);
+      block.open(res.text, 0);
       hudObj.textContent = res.text;
       setState('OPENED · read early by: nobody');
       hudSniper.textContent = 'too late';
@@ -162,4 +163,5 @@ block.init().then((ok) => {
 initCardModal();
 initConsole({ block });
 initBatch();
+initScene();
 startNetwork();

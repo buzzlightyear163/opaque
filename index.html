@@ -10,7 +10,11 @@
 <meta property="og:title" content="OPAQUE — orders encrypted to the future">
 <meta property="og:description" content="Snipers read your order before it lands. OPAQUE seals it to a future drand round. It opens on the second.">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' rx='4' fill='%23050506'/%3E%3Crect x='4' y='4' width='5.4' height='12' rx='1' fill='%23e9ebee'/%3E%3Crect x='10.6' y='4' width='5.4' height='12' rx='1' fill='%23e9ebee'/%3E%3C/svg%3E">
+<meta property="og:image" content="/og.png">
+<meta name="twitter:image" content="/og.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-3 -2 26 26'%3E%3Crect x='-3' y='-2' width='26' height='26' rx='6' fill='%23050506'/%3E%3Cpolygon points='10,1.6 18.2,6.3 10,11 1.8,6.3' fill='%23f4f5f7'/%3E%3Cpolygon points='1.8,6.3 10,11 10,20.4 1.8,15.7' fill='%23959ba4'/%3E%3Cpolygon points='10,11 18.2,6.3 18.2,15.7 10,20.4' fill='%2340454d'/%3E%3Cpolyline points='14.1,3.95 5.9,8.65 5.9,18.05' fill='none' stroke='%23ff4530' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 </head>
 <body>
 <div class="frame" aria-hidden="true"></div>
@@ -22,7 +26,7 @@
 <header class="bar">
   <div class="wrap bar-in">
     <a class="brand" href="#top" aria-label="OPAQUE, back to top">
-      <svg class="mark" viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="7.3" height="16" rx="1.2"/><rect x="10.7" y="2" width="7.3" height="16" rx="1.2"/></svg>
+      <svg class="mark" viewBox="0 0 20 22" aria-hidden="true"><polygon points="10,1.6 18.2,6.3 10,11 1.8,6.3" fill="#f4f5f7"/><polygon points="1.8,6.3 10,11 10,20.4 1.8,15.7" fill="#959ba4"/><polygon points="10,11 18.2,6.3 18.2,15.7 10,20.4" fill="#40454d"/><polyline points="14.1,3.95 5.9,8.65 5.9,18.05" fill="none" stroke="#ff4530" stroke-width="1.4" stroke-linejoin="round"/></svg>
       <span>OPAQUE</span>
     </a>
     <nav class="nav" aria-label="Sections">
@@ -190,33 +194,50 @@ sealing in your browser…
   </section>
 
   <!-- PROTOCOL -->
-  <section class="sec" id="protocol">
+  <section class="sec scene" id="protocol">
+    <div class="scene-track" id="sceneTrack">
+      <div class="scene-sticky">
+        <div class="wrap scene-grid">
+          <div class="scene-copy">
+            <p class="path">/protocol</p>
+            <h2>The key doesn't exist yet.</h2>
+            <ol class="ssteps" id="ssteps">
+              <li class="is-on">
+                <div class="step-top"><span class="step-n">01</span><span class="step-t">t₀</span></div>
+                <h3>Lock</h3>
+                <p>Your browser encrypts the order to round N. The round number is the identity and drand's public key is the master key. Nothing is sent anywhere.</p>
+              </li>
+              <li>
+                <div class="step-top"><span class="step-n">02</span><span class="step-t">t₀ → tₙ</span></div>
+                <h3>Wait</h3>
+                <p>The key is drand's BLS signature on round N. A threshold of independent operators produces it, and it does not exist before that round. quicknet launched with 18 organizations running 22 nodes.</p>
+              </li>
+              <li>
+                <div class="step-top"><span class="step-n">03</span><span class="step-t">tₙ</span></div>
+                <h3>Open</h3>
+                <p>drand publishes a signature every 3 seconds. When round N's lands, anyone can open the order, and everyone gets it at the same instant.</p>
+              </li>
+            </ol>
+            <div class="sbar" aria-hidden="true"><i id="sbar"></i></div>
+          </div>
+          <div class="scene-stage">
+            <canvas id="protoCube" role="img" aria-label="The sealed block closing around an order, waiting for its round, then opening."></canvas>
+            <div class="hud hud-tl"><span class="k">payload</span><span id="sPayload">BUY 2.5 SOL $OPAQUE</span></div>
+            <div class="hud hud-tr"><span class="k">round</span><span id="sRound">N</span></div>
+            <div class="hud hud-bl"><span class="k">key</span><span id="sKey">not needed yet</span></div>
+            <div class="hud hud-br"><span class="k">readable by</span><span id="sWho">you</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="wrap">
-      <header class="sec-head">
-        <p class="path">/protocol</p>
-        <h2>The key doesn't exist yet.</h2>
-        <p class="sec-lede">OPAQUE uses drand's timelock encryption. Your order is locked to a round number, and the only key that opens it is drand's signature on that round. Nobody can produce it early.</p>
-      </header>
-
-      <div class="proto">
-        <ol class="steps">
-          <li>
-            <div class="step-top"><span class="step-n">01</span><span class="step-t">t₀</span></div>
-            <h3>Lock</h3>
-            <p>Your browser encrypts the order to round N. The round number is the identity and drand's public key is the master key. Nothing is sent anywhere.</p>
-          </li>
-          <li>
-            <div class="step-top"><span class="step-n">02</span><span class="step-t">t₀ → tₙ</span></div>
-            <h3>Wait</h3>
-            <p>The key is drand's BLS signature on round N. A threshold of independent operators produces it, and it does not exist before that round. quicknet launched with 18 organizations running 22 nodes.</p>
-          </li>
-          <li>
-            <div class="step-top"><span class="step-n">03</span><span class="step-t">tₙ</span></div>
-            <h3>Open</h3>
-            <p>drand publishes a signature every 3 seconds. When round N's lands, anyone can open the order, and everyone gets it at the same instant.</p>
-          </li>
-        </ol>
-
+      <div class="beacon-row">
+        <div class="beacon-copy">
+          <p class="path">/beacon</p>
+          <h3 class="h3">This is the clock.</h3>
+          <p class="sec-lede">The latest drand quicknet round, fetched live from its public relays. Every seal on this page points at one of these rounds.</p>
+        </div>
         <figure class="beacon">
           <figcaption><span class="beacon-path">GET /public/latest</span><span class="beacon-st" id="bStatus">connecting</span></figcaption>
           <pre class="json" id="beaconJson"><code>{

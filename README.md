@@ -25,6 +25,10 @@ Edit `src/config.js`:
 - `pumpUrl` — the coin page on pump.fun
 - `xUrl` — the project's X account
 
+Once the domain is set, change `/og.png` in `index.html` (`og:image` and
+`twitter:image`) to the full URL, e.g. `https://yourdomain/og.png`, so X shows
+the preview card.
+
 ## What is real
 
 - `src/seal.js` — `timelockEncrypt` / `timelockDecrypt` from tlock-js
@@ -42,7 +46,8 @@ Any seal opens with drand's own CLI: `tle -d order.age`
 | --- | --- |
 | `src/main.js` | wiring: header beacon, hero loop, threat pane, protocol panel |
 | `src/console.js` | the seal console |
-| `src/cipherblock.js` | WebGL2 ASCII renderer for the hero block |
+| `src/cube3d.js` | three.js sealed block (hero and protocol scene): ciphertext faces, red seam with bloom, opens to the plaintext |
+| `src/scene.js` | pinned /protocol scroll scene: Lock → Wait → Open |
 | `src/batch.js` | demo batch, really sealed and opened |
 | `src/sniper.js` | the simulated adversary log |
 | `src/card.js` | 16:9 share card (PNG) |
