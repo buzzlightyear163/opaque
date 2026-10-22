@@ -1,0 +1,21 @@
+{
+  "name": "opaque",
+  "version": "0.1.0",
+  "description": "OPAQUE — orders encrypted to the future.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:preview": "vite build --mode artifact && node scripts/artifact.mjs",
+    "preview": "vite preview",
+    "verify:tlock": "node scripts/verify-tlock.mjs"
+  },
+  "dependencies": {
+    "tlock-js": "0.9.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10",
+    "vite-plugin-singlefile": "^2.0.3"
+  },
+  "private": true,
+  "type": "module"
+}
