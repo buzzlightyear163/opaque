@@ -3,9 +3,9 @@ export const CONFIG = {
   ticker: '$OPAQUE',
   // Paste the pump.fun contract address once the coin is live.
   // While it is empty, the CA row is hidden.
-  ca: '5LLVtPjVrErVNQ7JZ94oS7nKCoWBTBfkMLx6B6CUpump',
+  ca: 'FfzmHiNpsXtoMC4LW18Qf2eDpF1bSW1MrnaL3NEWpump',
   // Link to the coin page on pump.fun once it exists.
-  pumpUrl: 'https://pump.fun/coin/5LLVtPjVrErVNQ7JZ94oS7nKCoWBTBfkMLx6B6CUpump',
+  pumpUrl: 'https://pump.fun/coin/FfzmHiNpsXtoMC4LW18Qf2eDpF1bSW1MrnaL3NEWpump',
   // Project X account.
   xUrl: 'https://x.com/Opaqueorders',
 };
